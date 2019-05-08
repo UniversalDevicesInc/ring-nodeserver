@@ -1,4 +1,4 @@
-# Tesla Nodeserver
+# Ring Nodeserver
 
 This Nodeserver works with Polyglot cloud only.
 

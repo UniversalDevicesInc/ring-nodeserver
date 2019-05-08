@@ -1,6 +1,6 @@
 {
   "name": "Ring",
-  "docs": "https://github.com/UniversalDevicesInc/ring",
+  "docs": "https://github.com/UniversalDevicesInc/ring-nodeserver",
   "type": "node",
   "executable": "nodeserver.js",
   "install_cloud": "install_cloud.sh",
@@ -9,14 +9,14 @@
   "shortPoll": "5",
   "longPoll": "60",
   "profile_version": "0.0.1",
-  "ingressRequired": true,
+  "ingress_required": true,
   "credits": [
     {
       "title": "Ring NodeServer",
       "author": "Benoit Mercier",
       "version": "0.0.1",
       "date": "May 6th, 2019",
-      "source": "https://github.com/UniversalDevicesInc/ring",
+      "source": "https://github.com/UniversalDevicesInc/ring-nodeserver",
       "license": "MIT"
     }
   ]
