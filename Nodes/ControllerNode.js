@@ -15,7 +15,7 @@ module.exports = function(Polyglot) {
 
   // In this example, we also need to have our custom node because we create
   // nodes from this controller. See onCreateNew
-  const Vehicle = require('./Vehicle.js')(Polyglot);
+  const Doorbell = require('./Doorbell.js')(Polyglot);
 
   class Controller extends Polyglot.Node {
     // polyInterface: handle to the interface
@@ -25,15 +25,14 @@ module.exports = function(Polyglot) {
     constructor(polyInterface, primary, address, name) {
       super(nodeDefId, polyInterface, primary, address, name);
 
-      this.tesla = require('../lib/tesla.js')(Polyglot, polyInterface);
+      this.ringInterface =
+        require('../lib/ringInterface.js')(Polyglot, polyInterface);
 
       // Commands that this controller node can handle.
       // Should match the 'accepts' section of the nodedef.
       this.commands = {
-        // CREATE_NEW: this.onCreateNew,
         DISCOVER: this.onDiscover,
         UPDATE_PROFILE: this.onUpdateProfile,
-        // REMOVE_NOTICES: this.onRemoveNotices,
         QUERY: this.query,
       };
 
@@ -51,84 +50,68 @@ module.exports = function(Polyglot) {
       this.polyInterface.updateProfile();
     }
 
-    // Discover vehicles
+    // Discover Doorbells
     async onDiscover() {
       const _this = this;
       try {
-        logger.info('Discovering new vehicles');
+        logger.info('Discovering new devices');
 
-        const getVehiclesResult = await this.tesla.getVehicles();
-        const vehicles = getVehiclesResult.response;
+        const getDevicesResult = await this.ringInterface.getDevices();
+        const doorbells = getDevicesResult.doorbells;
 
-        logger.info('Vehicles: %o', vehicles);
+        logger.info('Doorbells: %o', doorbells);
+        logger.info('Devices result: %o', getDevicesResult);
 
-        const addResults = await Promise.all(vehicles.map(function(vehicle) {
-          return _this.autoAddVehicle(vehicle);
+        const addResults = await Promise.all(doorbells.map(function(doorbell) {
+          return _this.autoAddDoorbells(doorbell);
         }));
-        logger.info('Tesla Vehicles: %d, added to Polyglot: %d',
-          vehicles.length,
-          addResults.filter(function(v) {
-            return v && v.added;
+
+        logger.info('Doorbells: %d, added to Polyglot: %d',
+          doorbells.length,
+          addResults.filter(function(db) {
+            return db && db.added;
           }).length,
         );
-        this.clearCredentialsError();
       } catch (err) {
-        this.displayCredentialsError(err);
-        logger.errorStack(err, 'Error discovering vehicles:');
+        logger.errorStack(err, 'Error discovering devices:');
       }
     }
 
-    displayCredentialsError(err) {
-      if (err.statusCode === 401) {
-        this.polyInterface.addNotice(
-          'credsError',
-          'Tesla account login failed'
-        );
-      }
-    }
-
-    clearCredentialsError() {
-      this.polyInterface.removeNotice('credsError');
-    }
-
-    async autoAddVehicle(vehicle) {
-      // id is the vehicle ID for the purpose of calling APIs.
-      // I have seen cases where the good number is id_s, not id (?)
-      const id = typeof vehicle.id_s === 'string' ?
-        vehicle.id_s : vehicle.id_s.toString();
-      const deviceAddress = typeof vehicle.vehicle_id === 'string' ?
-        vehicle.vehicle_id : vehicle.vehicle_id.toString();
-      const node = this.polyInterface.getNode(deviceAddress);
+    async autoAddDoobell(doorbell) {
+      const id = typeof doorbell.id === 'string' ?
+        doorbell.id : vehicle.id.toString();
+      const deviceAddress = id;
+      const node = this.polyInterface.getNode(id); // id is 5 digits
 
       if (!node) {
         try {
-          logger.info('Adding vehicle node %s: %s',
-            deviceAddress, vehicle.display_name);
+          logger.info('Adding doorbell node %s: %s',
+            deviceAddress, doorbell.description);
 
           const result = await this.polyInterface.addNode(
-            new Vehicle(
+            new Doorbell(
               this.polyInterface,
               this.address, // primary
               deviceAddress,
-              vehicle.display_name,
-              id) // We save the ID in GV20 for eventual API calls
+              doorbell.description
+            )
           );
 
-          logger.info('Vehicle added: %s', result);
+          logger.info('Doorbell added: %s', result);
           this.polyInterface.addNoticeTemp(
-            'newVehicle-' + deviceAddress,
-            'New node created: ' + vehicle.display_name,
+            'newDoorbell-' + deviceAddress,
+            'New node created: ' + doorbell.description,
             5
           );
 
           return { added: true };
 
         } catch (err) {
-          logger.errorStack(err, 'Vehicle add failed:');
+          logger.errorStack(err, 'Doorbell add failed:');
         }
       } else {
-        logger.info('Vehicle already exists: %s (%s)',
-          deviceAddress, vehicle.display_name);
+        logger.info('Doorbell already exists: %s (%s)',
+          deviceAddress, doorbell.description);
       }
     }
   }

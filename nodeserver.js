@@ -11,22 +11,7 @@ const logger = Polyglot.logger;
 const lock = new AsyncLock({ timeout: 500 });
 
 const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
-const Vehicle = require('./Nodes/Vehicle.js')(Polyglot);
-
-const oAuthRedirectUri = '/api/oauth/callback';
-
-const oAuthClients = {
-  test: {
-    clientId: 'pgtest',
-    secret: 'lu0uakrpmo2cchok2ahskfp0zdkgnzcrn3aisi86rbkhtcpcl7ljocmvxs8uekp7',
-    baseUrl: 'https://pgtest.isy.io',
-  },
-  'polyglot.isy.io': {
-    clientId: 'pgprod',
-    secret: 'mc18xlukpdtnn1os13ztkqzfho6ju9d1owntg6mhbkqlo4xm1q7ih6z0d2fcbmho',
-    baseUrl: 'https://polyglot.isy.io',
-  },
-};
+const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
 
 
 // Must be the same as in tesla.js
@@ -46,10 +31,13 @@ logger.info('Starting Ring Node Server');
 
 // Create an instance of the Polyglot interface. We need pass all the node
 // classes that we will be using.
-const poly = new Polyglot.Interface([ControllerNode, Vehicle]);
+const poly = new Polyglot.Interface([ControllerNode, Doorbell]);
 
-// Tesla API interface module
-// const tesla = require('./lib/tesla.js')(Polyglot, poly);
+// Ring API interface module
+const ringInterface = require('./lib/ringInterface.js')(Polyglot, poly);
+
+// Web server which will receive Ring events when subscribed
+const ringEvents = require('./lib/ringEvents.js')(Polyglot, poly);
 
 // Connected to MQTT, but config has not yet arrived.
 poly.on('mqttConnected', function() {
@@ -110,6 +98,23 @@ poly.on('config', function(config) {
       //   logger.error('Error while auto-deleting controller node');
       // }
     }
+
+    // If we are configured correctly
+    logger.info('Ring events server public interface is %s:%s',
+      config.netInfo.publicIp,
+      config.netInfo.publicPort);
+
+    if (!config.netInfo.publicPort) {
+      logger.error(
+        'Public port not set. ingressRequired must be set on the store record');
+    }
+
+    try {
+      callAsync(getDevices());
+    } catch (err) {
+      logger.errorStack(err, 'Error getting devices:');
+    }
+
   } else {
     if (config.newParamsDetected) {
       // logger.info('New parameters detected');
@@ -131,10 +136,17 @@ poly.on('config', function(config) {
   }
 
 
-  if (config.customData) {
-    sendAuthMessage('test', config.worker);
-  }
 });
+
+async function getUser() {
+  const user = await ringInterface.getUser();
+  logger.info('User: %o', user);
+}
+
+async function getDevices() {
+  const devices = await ringInterface.getDevices();
+  logger.info('Devices: %o', devices);
+}
 
 
 // This is triggered every x seconds. Frequency is configured in the UI.
@@ -144,10 +156,12 @@ poly.on('poll', function(longPoll) {
 
 // We receive this after a successful authorization
 // TODO: Add to node.js template
-poly.on('oauth', function(oauth) {
-  // oauth.code
-  // oauth.state
-  logger.info('Received oAuth %o', oauth);
+poly.on('oauth', function(oaMessage) {
+  // oaMessage.code: Authorization code received from Ring after authorization
+  // oaMessage.state: This must be the worker ID.
+
+  logger.info('Received oAuth message %o', oaMessage);
+  ringInterface.processAuthCode(oaMessage.code, oaMessage.state);
 });
 
 // Received a 'stop' message from Polyglot. This NodeServer is shutting down
@@ -258,27 +272,6 @@ async function autoCreateController() {
 //   }
 // }
 
-function sendAuthMessage(env, state) {
-  const authNoticeKey = 'auth';
-  const notices = poly.getNotices();
-
-  if (!notices[authNoticeKey]) {
-    // Add a notice in the UI
-    const oa = oAuthClients[env];
-    const authUrl = 'https://oauth.ring.com/oauth/authorize' +
-      '?response_type=code' +
-      '&client_id=' + oa.clientId +
-      '&redirect_uri=' + oa.baseUrl + oAuthRedirectUri +
-      '&state=' + state +
-      '&scope=read';
-
-    const authMessage = 'Please click <a href="' + authUrl +
-      '" target="_blank">here</a> to authorize access to your Ring account';
-
-    poly.addNotice(authNoticeKey, authMessage);
-  }
-}
-
 
 // Call Async function from a non-async function without waiting for result
 // and log the error if it fails
@@ -287,8 +280,8 @@ function callAsync(promise) {
     try {
       await promise;
     } catch (err) {
-      logger.error('Error with async function: %s %s',
-        err.message, err.stack ? err.stack : '');
+      logger.error('Error with async function: %s',
+        err.stack ? err.stack : err.message);
     }
   })();
 }
