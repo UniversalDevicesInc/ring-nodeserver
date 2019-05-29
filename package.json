@@ -1,7 +1,7 @@
 {
   "name": "ring",
   "description": "Ring NodeServer - Development in progress",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "Benoit Mercier",
   "license": "MIT",
   "main": "nodeserver.js",
@@ -12,7 +12,7 @@
     "async-lock": "^1.1.4",
     "body-parser": "^1.19.0",
     "express": "^4.17.0",
-    "pgc_interface": "^1.0.4",
+    "pgc_interface": "^1.0.6",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7"
   },

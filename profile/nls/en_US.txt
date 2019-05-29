@@ -9,6 +9,10 @@ ND-DOORBELL-NAME = Doorbell
 ND-DOORBELL-ICON = DoorLock
 ST-DB-ST-NAME = Battery life
 ST-DB-ERR-NAME = Error
+CMD-DB-DON-NAME = Ding
 
-CMD-DB-DING-NAME = Ding
-CMD-DB-MOTION-NAME = Motion
+ND-DOORBELLM-NAME = Doorbell Motion
+ND-DOORBELLM-ICON = MotionSensor
+CMD-DBM-DON-NAME = Motion
+CMD-DBM-DOF-NAME = Motion timeout
+

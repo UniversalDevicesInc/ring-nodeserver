@@ -1,11 +1,11 @@
-<!-- Version 0.0.2 -->
+<!-- Version 0.0.1 -->
 <editors>
   <editor id="BOOLEAN">
     <!-- 2 is boolean -->
     <range uom="2" subset="0-1"/>
   </editor>
-  <editor id="I_PERCENT">
-    <!-- 51 is percent -->
-    <range uom="51" subset="0-100" />
+  <editor id="I_MV">
+    <!-- 43 is millivolt -->
+    <range uom="43" min="0" max="20000" step="10" prec="0" />
   </editor>
 </editors>

@@ -1,4 +1,4 @@
-<!-- Version 0.0.2 -->
+<!-- Version 1.0.0 -->
 <nodeDefs>
 
   <!-- The Tesla controller node -->
@@ -16,20 +16,34 @@
     </cmds>
   </nodedef>
 
-  <!-- Doorbell -->
+  <!-- Doorbell Ding-->
   <nodedef id="DOORBELL" nls="DB">
     <sts>
-      <st id="ST" editor="I_PERCENT"/> <!-- Battery level -->
+      <st id="ST" editor="I_MV"/> <!-- Battery level -->
       <st id="ERR" editor="BOOLEAN" hide="T" />
     </sts>
     <cmds>
       <sends>
-        <cmd id="DING"/>
-        <cmd id="MOTION"/>
+        <cmd id="DON"/>
       </sends>
       <accepts>
+        <cmd id="DON"/>
         <cmd id="QUERY"/>
       </accepts>
     </cmds>
+  </nodedef>
+
+  <!-- Doorbell Motion-->
+  <nodedef id="DOORBELLM" nls="DBM">
+  <sts/>
+  <cmds>
+    <sends>
+      <cmd id="DON"/>
+      <cmd id="DOF"/>
+    </sends>
+    <accepts>
+      <cmd id="DON"/>
+    </accepts>
+  </cmds>
   </nodedef>
 </nodeDefs>

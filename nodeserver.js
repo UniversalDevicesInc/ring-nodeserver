@@ -9,35 +9,25 @@ const Polyglot = require('pgc_interface');
 
 const logger = Polyglot.logger;
 const lock = new AsyncLock({ timeout: 500 });
-
-const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
-const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
-
-
-// Must be the same as in tesla.js
-// const emailParam = 'Tesla account email';
-// const pwParam = 'Tesla account password';
-
-// UI customParams (param:defaultValue)
-// const defaultParams = {
-//   [emailParam]: 'Tesla email',
-//   [pwParam]: 'password',
-// };
-
 const controllerAddress = 'controller';
+
+const Controller = require('./Nodes/ControllerNode.js')(Polyglot, subscribe);
+const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
+const DoorbellMotion = require('./Nodes/DoorbellMotion.js')(Polyglot);
 
 logger.info('-------------------------------------------------------');
 logger.info('Starting Ring Node Server');
 
-// Create an instance of the Polyglot interface. We need pass all the node
+// Create an instance of the Polyglot interface. We need to pass all the node
 // classes that we will be using.
-const poly = new Polyglot.Interface([ControllerNode, Doorbell]);
+const poly = new Polyglot.Interface([Controller, Doorbell, DoorbellMotion]);
 
 // Ring API interface module
 const ringInterface = require('./lib/ringInterface.js')(Polyglot, poly);
 
-// Web server which will receive Ring events when subscribed
-const ringEvents = require('./lib/ringEvents.js')(Polyglot, poly);
+// Start web server which will receive Ring events when subscribed
+// Events will be sent to ringInterface.eventProcessor
+require('./lib/ringEvents.js')(Polyglot, poly, ringInterface);
 
 // Connected to MQTT, but config has not yet arrived.
 poly.on('mqttConnected', function() {
@@ -68,14 +58,7 @@ poly.on('config', function(config) {
     if (!nodesCount) {
       logger.info('Sending profile files to ISY.');
       poly.updateProfile();
-    }
 
-    // Sets the configuration fields in the UI
-    // initializeCustomParams(config.customParams);
-
-    // If we have no nodes yet, we add the first node: a controller node which
-    // holds the node server status and control buttons.
-    if (!nodesCount) {
       // When Nodeserver is started for the first time, creation of the
       // controller fails if done too early.
       const createDelay = 5000;
@@ -89,65 +72,29 @@ poly.on('config', function(config) {
         }
       }, createDelay);
     } else {
-      // Test code to remove the first node found
-
-      // try {
-      //   logger.info('Auto-deleting controller');
-      //  callAsync(autoDeleteNode(config.nodes[Object.keys(config.nodes)[0]]));
-      // } catch (err) {
-      //   logger.error('Error while auto-deleting controller node');
-      // }
+      // If we have the controller we need to display the authorization notice
+      // if we don't already have tokens. getAccessToken does this for us.
+      callAsync(ringInterface.getAccessToken());
     }
 
-    // If we are configured correctly
-    logger.info('Ring events server public interface is %s:%s',
-      config.netInfo.publicIp,
-      config.netInfo.publicPort);
+    if (config.netInfo.publicPort) {
+      try {
+        // If we are configured correctly
+        logger.info('Ring events server public interface is %s:%s',
+          config.netInfo.publicIp,
+          config.netInfo.publicPort);
 
-    if (!config.netInfo.publicPort) {
-      logger.error(
-        'Public port not set. ingressRequired must be set on the store record');
-    }
-
-    try {
-      callAsync(getDevices());
-    } catch (err) {
-      logger.errorStack(err, 'Error getting devices:');
-    }
-
-  } else {
-    if (config.newParamsDetected) {
-      // logger.info('New parameters detected');
-      // const controllerNode = poly.getNode(controllerAddress);
-
-      // Automatically try to discover vehicles if user changed his creds
-      // if (controllerNode &&
-      //   nodesCount === 1 &&
-      //   config.customParams[emailParam] &&
-      //   /[^@]+@[^\.]+\..+/.test(config.customParams[emailParam]) &&
-      //   config.customParams[emailParam] !== defaultParams [emailParam] &&
-      //   config.customParams[pwParam] &&
-      //   config.customParams[pwParam].length > 1 &&
-      //   config.customParams[pwParam] !== defaultParams [pwParam]
-      // ) {
-      //   controllerNode.onDiscover();
-      // }
+        subscribe();
+      } catch (err) {
+        logger.errorStack(err, 'Error subscribing:');
+      }
+    } else {
+      logger.error('Public port not set. ' +
+        'ingressRequired must be set on the store record. netInfo is %o',
+        config.netInfo);
     }
   }
-
-
 });
-
-async function getUser() {
-  const user = await ringInterface.getUser();
-  logger.info('User: %o', user);
-}
-
-async function getDevices() {
-  const devices = await ringInterface.getDevices();
-  logger.info('Devices: %o', devices);
-}
-
 
 // This is triggered every x seconds. Frequency is configured in the UI.
 poly.on('poll', function(longPoll) {
@@ -155,22 +102,22 @@ poly.on('poll', function(longPoll) {
 });
 
 // We receive this after a successful authorization
-// TODO: Add to node.js template
 poly.on('oauth', function(oaMessage) {
   // oaMessage.code: Authorization code received from Ring after authorization
   // oaMessage.state: This must be the worker ID.
 
   logger.info('Received oAuth message %o', oaMessage);
-  ringInterface.processAuthCode(oaMessage.code, oaMessage.state);
+  ringInterface.processAuthCode(oaMessage.code,
+    oaMessage.state, controllerAddress);
 });
 
 // Received a 'stop' message from Polyglot. This NodeServer is shutting down
 poly.on('stop', async function() {
   logger.info('Graceful stop');
 
-  // Make a last short poll and long poll
+  // Make a last short poll
   await doPoll(false);
-  // await doPoll(true); Long poll is not used.
+  ringInterface.unsubscribe();
 
   // Tell Interface we are stopping (Our polling is now finished)
   poly.stop();
@@ -179,6 +126,7 @@ poly.on('stop', async function() {
 // Received a 'delete' message from Polyglot. This NodeServer is being removed
 poly.on('delete', function() {
   logger.info('Nodeserver is being deleted');
+  ringInterface.unsubscribe();
 
   // We can do some cleanup, then stop.
   poly.stop();
@@ -191,12 +139,12 @@ poly.on('mqttEnd', function() {
 
 // Triggered for every message received from polyglot.
 // Can be used for troubleshooting.
-poly.on('messageReceived', function(message) {
-  // Only display messages other than config
-  if (!message['config']) {
-    logger.debug('Message: %o', message);
-  }
-});
+// poly.on('messageReceived', function(message) {
+//   // Only display messages other than config
+//   if (!message['config']) {
+//     logger.debug('Message: %o', message);
+//   }
+// });
 
 // Triggered for every message received from polyglot.
 // Can be used for troubleshooting.
@@ -206,13 +154,13 @@ poly.on('messageReceived', function(message) {
 
 // This is being triggered based on the short and long poll parameters in the UI
 async function doPoll(longPoll) {
-  // Prevents polling logic reentry if an existing poll is underway
   try {
-    await lock.acquire('poll', function() {
+    // Prevents polling logic reentry if an existing poll is underway
+    await lock.acquire('poll-' + (longPoll ? 'long' : 'short'), function() {
       logger.info('%s', longPoll ? 'Long poll' : 'Short poll');
 
-      // We poll during short poll only. long polls are ignored.
       if (!longPoll) {
+        // Short poll - We retrieve the battery status by querying all nodes
         const nodes = poly.getNodes();
 
         Object.keys(nodes).forEach(function(address) {
@@ -220,6 +168,9 @@ async function doPoll(longPoll) {
             nodes[address].query();
           }
         });
+      } else {
+        // We retry a subscription. This also changes the pragma.
+        subscribe();
       }
     });
   } catch (err) {
@@ -231,13 +182,16 @@ async function doPoll(longPoll) {
 async function autoCreateController() {
   try {
     await poly.addNode(
-      new ControllerNode(poly,
+      new Controller(poly,
         controllerAddress, controllerAddress, 'Ring NodeServer')
     );
 
     // Add a notice in the UI
     poly.addNoticeTemp('newController', 'Controller node initialized', 5);
 
+    // After we have the controller we need to display the authorization notice
+    // getAccessToken does this for us.
+    await ringInterface.getAccessToken();
   } catch (err) {
     logger.error('Error creating controller node');
 
@@ -246,32 +200,10 @@ async function autoCreateController() {
   }
 }
 
-
-// Sets the custom params as we want them. Keeps existing params values.
-// function initializeCustomParams(currentParams) {
-//   const defaultParamKeys = Object.keys(defaultParams);
-//   const currentParamKeys = Object.keys(currentParams);
-//
-//   // Get orphan keys from either currentParams or defaultParams
-//   const differentKeys = defaultParamKeys.concat(currentParamKeys)
-//   .filter(function(key) {
-//     return !(key in defaultParams) || !(key in currentParams);
-//   });
-//
-//   if (differentKeys.length) {
-//     let customParams = {};
-//
-//     // Only keeps params that exists in defaultParams
-//     // Sets the params to the existing value, or default value.
-//     defaultParamKeys.forEach(function(key) {
-//       customParams[key] = currentParams[key] ?
-//         currentParams[key] : defaultParams[key];
-//     });
-//
-//     poly.saveCustomParams(customParams);
-//   }
-// }
-
+// subscribe to Ring events
+function subscribe() {
+  return callAsync(ringInterface.subscribe());
+}
 
 // Call Async function from a non-async function without waiting for result
 // and log the error if it fails
@@ -290,9 +222,12 @@ function trapUncaughExceptions() {
   // If we get an uncaugthException...
   process.on('uncaughtException', function(err) {
     // Used in dev. Useful when logger is not yet defined.
-    console.log('err', err);
-
-    logger.error(`uncaughtException REPORT THIS!: ${err.stack}`);
+    // Has logger been defined yet?
+    if (logger) {
+      logger.error(`uncaughtException REPORT THIS!: ${err.stack}`);
+    } else {
+      console.log('err', err); // Useful in dev only
+    }
   });
 }
 

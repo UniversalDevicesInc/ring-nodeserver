@@ -1,7 +1,8 @@
 'use strict';
 
 // nodeDefId must match the nodedef in the profile
-const nodeDefId = 'DOORBELL';
+const nodeDefId = 'DOORBELLM';
+const motionEndTimer = 8000; // 8 Seconds.
 
 module.exports = function(Polyglot) {
   // Utility function provided to facilitate logging.
@@ -25,46 +26,38 @@ module.exports = function(Polyglot) {
       // REF: https://github.com/UniversalDevicesInc/hints
       // Must be a string in this format
       // If you don't care about the hint, just comment the line.
-      this.hint = '0x01080101'; // See hints.yaml
+      this.hint = '0x01030401'; // See hints.yaml - It's a motion sensor
+
+      this.timer = null;
 
       // Commands that this node can handle.
       // Should match the 'accepts' section of the nodedef.
       this.commands = {
-        DON: this.ding,
-        QUERY: this.query,
+        DON: this.motion,
       };
 
       // Status that this node has.
       // Should match the 'sts' section of the nodedef.
       // Must all be strings
-      this.drivers = {
-        ST: { value: '', uom: 43 }, // Battery level in millivolt
-        ERR: { value: '0', uom: 2 }, // In error?
-      };
+      this.drivers = {};
     }
 
-    async ding() {
-      logger.info('Ding event triggered successfully');
-      this.reportCmd('DON'); // DON = Ding event
-    }
+    async motion() {
+      const _this = this;
+      logger.info('Motion event triggered successfully');
 
-    async query() {
-      const id = this.address;
-      const doorbellData = await this.ringInterface.getDoorbellData(id);
+      _this.reportCmd('DON'); // DON = Motion event
 
-      if (doorbellData && 'battery_life' in doorbellData) {
-        // logger.info('This doorbell Data %o', doorbellData);
-        logger.info('Doorbell battery_life set to %s',
-          doorbellData.battery_life);
-
-        this.setDriver('ST', doorbellData.battery_life, false);
-        this.setDriver('ERR', '0', false);
-        this.reportDrivers(); // Reports only changed values
-      } else {
-        logger.error('API result for getDoorbellData is incorrect: %o',
-          doorbellData);
-        this.setDriver('ERR', '1'); // Will be reported if changed
+      if (this.timer) {
+        clearTimeout(this.timer);
       }
+
+      this.timer = setTimeout(
+        function() {
+          _this.reportCmd('DOF'); // DOF = No more motion
+        },
+        motionEndTimer
+      );
     }
   }
 

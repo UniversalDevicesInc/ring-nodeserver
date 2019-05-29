@@ -9,13 +9,14 @@
 // nodeDefId must match the nodedef id in your nodedef
 const nodeDefId = 'CONTROLLER';
 
-module.exports = function(Polyglot) {
+module.exports = function(Polyglot, subscribe) {
   // Utility function provided to facilitate logging.
   const logger = Polyglot.logger;
 
   // In this example, we also need to have our custom node because we create
-  // nodes from this controller. See onCreateNew
+  // nodes from this controller. See onDiscover
   const Doorbell = require('./Doorbell.js')(Polyglot);
+  const DoorbellMotion = require('./DoorbellMotion.js')(Polyglot);
 
   class Controller extends Polyglot.Node {
     // polyInterface: handle to the interface
@@ -25,6 +26,7 @@ module.exports = function(Polyglot) {
     constructor(polyInterface, primary, address, name) {
       super(nodeDefId, polyInterface, primary, address, name);
 
+      this.subscribeEvents = subscribe;
       this.ringInterface =
         require('../lib/ringInterface.js')(Polyglot, polyInterface);
 
@@ -47,6 +49,7 @@ module.exports = function(Polyglot) {
 
     // Sends the profile files to ISY
     onUpdateProfile() {
+      logger.info('Updating profile');
       this.polyInterface.updateProfile();
     }
 
@@ -60,10 +63,10 @@ module.exports = function(Polyglot) {
         const doorbells = getDevicesResult.doorbells;
 
         logger.info('Doorbells: %o', doorbells);
-        logger.info('Devices result: %o', getDevicesResult);
+        // logger.info('Devices result: %o', getDevicesResult);
 
         const addResults = await Promise.all(doorbells.map(function(doorbell) {
-          return _this.autoAddDoorbells(doorbell);
+          return _this.autoAddDoorbell(doorbell, false);
         }));
 
         logger.info('Doorbells: %d, added to Polyglot: %d',
@@ -72,47 +75,89 @@ module.exports = function(Polyglot) {
             return db && db.added;
           }).length,
         );
+
+        // Automatically subscribe to events
+        this.subscribeEvents();
       } catch (err) {
         logger.errorStack(err, 'Error discovering devices:');
       }
     }
 
-    async autoAddDoobell(doorbell) {
+    async autoAddDoorbell(doorbell) {
+      let added = false;
       const id = typeof doorbell.id === 'string' ?
-        doorbell.id : vehicle.id.toString();
+        doorbell.id : doorbell.id.toString();
       const deviceAddress = id;
-      const node = this.polyInterface.getNode(id); // id is 5 digits
+      const node = this.polyInterface.getNode(deviceAddress); // id is 5 digits
+      const desc = doorbell.description;
+
+      const deviceAddressMotion = id + 'm';
+      const nodeMotion = this.polyInterface.getNode(deviceAddressMotion);
+      const descMotion = doorbell.description + ' motion';
 
       if (!node) {
         try {
           logger.info('Adding doorbell node %s: %s',
-            deviceAddress, doorbell.description);
+            deviceAddress, desc);
 
-          const result = await this.polyInterface.addNode(
+          await this.polyInterface.addNode(
             new Doorbell(
               this.polyInterface,
               this.address, // primary
               deviceAddress,
-              doorbell.description
+              desc
             )
           );
 
-          logger.info('Doorbell added: %s', result);
+          logger.info('Doorbell added: %s', desc);
           this.polyInterface.addNoticeTemp(
             'newDoorbell-' + deviceAddress,
-            'New node created: ' + doorbell.description,
+            'New node created: ' + desc,
             5
           );
 
-          return { added: true };
+          added = true;
 
         } catch (err) {
           logger.errorStack(err, 'Doorbell add failed:');
         }
       } else {
         logger.info('Doorbell already exists: %s (%s)',
-          deviceAddress, doorbell.description);
+          deviceAddress, desc);
       }
+
+      if (!nodeMotion) {
+        try {
+          logger.info('Adding doorbell motion node %s: %s',
+            deviceAddressMotion, descMotion);
+
+          await this.polyInterface.addNode(
+            new DoorbellMotion(
+              this.polyInterface,
+              this.address, // primary
+              deviceAddressMotion,
+              descMotion
+            )
+          );
+
+          logger.info('Doorbell motion node added: %s', descMotion);
+          this.polyInterface.addNoticeTemp(
+            'newDoorbell-' + deviceAddressMotion,
+            'New node created: ' + descMotion,
+            5
+          );
+
+          added = true;
+
+        } catch (err) {
+          logger.errorStack(err, 'Doorbell add failed:');
+        }
+      } else {
+        logger.info('Doorbell motion node already exists: %s (%s)',
+          deviceAddressMotion, descMotion);
+      }
+
+      return { added: added }; // Return true if either node was created.
     }
   }
 
