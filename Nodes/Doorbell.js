@@ -45,6 +45,11 @@ module.exports = function(Polyglot) {
 
     async ding() {
       logger.info('Event manually triggered for %s: Ding', this.address);
+      return this.activate();
+    }
+
+    // Runs when receiving event, or manually.
+    async activate() {
       this.reportCmd('DON'); // DON = Ding event
     }
 

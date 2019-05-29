@@ -43,8 +43,13 @@ module.exports = function(Polyglot) {
     }
 
     async motion() {
-      const _this = this;
       logger.info('Event manually triggered for %s: Motion', this.address);
+      return this.activate();
+    }
+
+    // Runs when receiving event, or manually.
+    async activate() {
+      const _this = this;
 
       _this.reportCmd('DON'); // DON = Motion event
 
