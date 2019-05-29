@@ -44,7 +44,7 @@ module.exports = function(Polyglot) {
     }
 
     async ding() {
-      logger.info('Ding event triggered successfully');
+      logger.info('Event manually triggered for %s: Ding', this.address);
       this.reportCmd('DON'); // DON = Ding event
     }
 
