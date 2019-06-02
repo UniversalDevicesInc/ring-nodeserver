@@ -10,6 +10,7 @@
   "longPoll": "14400",
   "profile_version": "1.0.0",
   "ingress_required": true,
+  "httpsIngress": true,
   "credits": [
     {
       "title": "Ring NodeServer",
