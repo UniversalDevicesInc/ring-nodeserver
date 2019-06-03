@@ -1,7 +1,7 @@
-<!-- Version 1.0.0 -->
+<!-- Version 1.1.0 -->
 <nodeDefs>
 
-  <!-- The Tesla controller node -->
+  <!-- The controller node -->
   <nodedef id="CONTROLLER" nls="CONTROLLER">
     <sts>
       <st id="ST" editor="BOOLEAN"/>
@@ -33,7 +33,7 @@
     </cmds>
   </nodedef>
 
-  <!-- Doorbell Motion-->
+  <!-- Doorbell Motion Node (Has no battery) -->
   <nodedef id="DOORBELLM" nls="DBM">
   <sts/>
   <cmds>
@@ -45,5 +45,22 @@
       <cmd id="DON"/>
     </accepts>
   </cmds>
+  </nodedef>
+
+  <!-- Camera Motion Node (Has battery) -->
+  <nodedef id="CAM" nls="CAM">
+    <sts>
+      <st id="ST" editor="I_MV"/> <!-- Battery level -->
+      <st id="ERR" editor="BOOLEAN" hide="T" />
+    </sts>
+    <cmds>
+      <sends>
+        <cmd id="DON"/>
+        <cmd id="DOF"/>
+      </sends>
+      <accepts>
+        <cmd id="DON"/>
+      </accepts>
+    </cmds>
   </nodedef>
 </nodeDefs>

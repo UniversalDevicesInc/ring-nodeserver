@@ -1,14 +1,15 @@
 'use strict';
 
 // nodeDefId must match the nodedef in the profile
-const nodeDefId = 'DOORBELL';
+const nodeDefId = 'CAM';
+const motionEndTimer = 8000; // 8 Seconds.
 
 module.exports = function(Polyglot) {
   // Utility function provided to facilitate logging.
   const logger = Polyglot.logger;
 
   // This is your custom Node class
-  class Doorbell extends Polyglot.Node {
+  class Camera extends Polyglot.Node {
 
     // polyInterface: handle to the interface
     // primary: Same as address, if the node is a primary node
@@ -25,12 +26,14 @@ module.exports = function(Polyglot) {
       // REF: https://github.com/UniversalDevicesInc/hints
       // Must be a string in this format
       // If you don't care about the hint, just comment the line.
-      this.hint = '0x01080101'; // See hints.yaml
+      this.hint = '0x01030401'; // See hints.yaml - It's a motion sensor
+
+      this.timer = null;
 
       // Commands that this node can handle.
       // Should match the 'accepts' section of the nodedef.
       this.commands = {
-        DON: this.ding,
+        DON: this.motion,
         QUERY: this.query,
       };
 
@@ -43,24 +46,37 @@ module.exports = function(Polyglot) {
       };
     }
 
-    async ding() {
-      logger.info('Event manually triggered for %s: Ding', this.address);
+    async motion() {
+      logger.info('Event manually triggered for %s: Motion', this.address);
       return this.activate();
     }
 
     // Runs when receiving event, or manually.
     async activate() {
-      this.reportCmd('DON'); // DON = Ding event
+      const _this = this;
+
+      _this.reportCmd('DON'); // DON = Motion event
+
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+
+      this.timer = setTimeout(
+        function() {
+          _this.reportCmd('DOF'); // DOF = No more motion
+        },
+        motionEndTimer
+      );
     }
 
     // query is called from polling. If so, we have device data pre fetched.
-    async query(preFetched) {
+    async query(preFetched = null) {
       const id = this.address;
       const deviceData = await this.ringInterface.getDeviceData(id, preFetched);
 
       if (deviceData && 'battery_life' in deviceData) {
         // logger.info('This doorbell Data %o', deviceData);
-        logger.info('Doorbell %s battery_life set to %s',
+        logger.info('Device %s battery_life set to %s',
           id, deviceData.battery_life);
 
         this.setDriver('ST', deviceData.battery_life, false);
@@ -75,7 +91,7 @@ module.exports = function(Polyglot) {
   }
 
   // Required so that the interface can find this Node class using the nodeDefId
-  Doorbell.nodeDefId = nodeDefId;
+  Camera.nodeDefId = nodeDefId;
 
-  return Doorbell;
+  return Camera;
 };

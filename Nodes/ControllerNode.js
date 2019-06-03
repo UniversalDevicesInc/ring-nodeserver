@@ -17,6 +17,7 @@ module.exports = function(Polyglot, subscribe) {
   // nodes from this controller. See onDiscover
   const Doorbell = require('./Doorbell.js')(Polyglot);
   const DoorbellMotion = require('./DoorbellMotion.js')(Polyglot);
+  const Camera = require('./Camera.js')(Polyglot);
 
   class Controller extends Polyglot.Node {
     // polyInterface: handle to the interface
@@ -60,10 +61,13 @@ module.exports = function(Polyglot, subscribe) {
         logger.info('Discovering new devices');
 
         const getDevicesResult = await this.ringInterface.getDevices();
-        const doorbells = getDevicesResult.doorbells;
+        // logger.info('Devices result: %o', getDevicesResult);
+
+        // ----- Doorbells -----
+        const doorbells = getDevicesResult.doorbells
+        .concat(getDevicesResult.authorized_doorbells);
 
         logger.info('Doorbells: %o', doorbells);
-        // logger.info('Devices result: %o', getDevicesResult);
 
         const addResults = await Promise.all(doorbells.map(function(doorbell) {
           return _this.autoAddDoorbell(doorbell, false);
@@ -73,6 +77,22 @@ module.exports = function(Polyglot, subscribe) {
           doorbells.length,
           addResults.filter(function(db) {
             return db && db.added;
+          }).length,
+        );
+
+        // ----- Cameras -----
+        const cams = getDevicesResult.stickup_cams;
+
+        logger.info('Cameras: %o', cams);
+
+        const camsAddResults = await Promise.all(cams.map(function(cam) {
+          return _this.autoAddMotionNode(cam, false);
+        }));
+
+        logger.info('Cameras: %d, added to Polyglot: %d',
+          cams.length,
+          camsAddResults.filter(function(c) {
+            return c && c.added;
           }).length,
         );
 
@@ -90,10 +110,6 @@ module.exports = function(Polyglot, subscribe) {
       const deviceAddress = id;
       const node = this.polyInterface.getNode(deviceAddress); // id is 5 digits
       const desc = doorbell.description;
-
-      const deviceAddressMotion = id + 'm';
-      const nodeMotion = this.polyInterface.getNode(deviceAddressMotion);
-      const descMotion = doorbell.description + ' motion';
 
       if (!node) {
         try {
@@ -126,13 +142,39 @@ module.exports = function(Polyglot, subscribe) {
           deviceAddress, desc);
       }
 
+      const motionAdded = await this.autoAddMotionNode(doorbell, true);
+
+      // Return true if any node was created.
+      return { added: added || motionAdded };
+    }
+
+    async autoAddMotionNode(device, isDoorbell = false) {
+      let added = false;
+      const id = typeof device.id === 'string' ?
+        device.id : device.id.toString();
+
+      const deviceAddressMotion = id + 'm';
+      const nodeMotion = this.polyInterface.getNode(deviceAddressMotion);
+      const descMotion = device.description + ' motion';
+      const kind = device.kind;
+      const kindNodedefs = {
+        stickup_cam_elite: Camera, // With battery_life
+        hp_cam_v1: Camera,
+        hp_cam_v2: Camera,
+      };
+
+      // Nodedef for doorbell motion node is DoorbellMotion
+      // Default Nodedef for camera nodes is Camera
+      const Nodedef = isDoorbell ? DoorbellMotion :
+        (kindNodedefs[device.kind] ? kindNodedefs[device.kind] : Camera);
+
       if (!nodeMotion) {
         try {
-          logger.info('Adding doorbell motion node %s: %s',
-            deviceAddressMotion, descMotion);
+          logger.info('Adding motion node kind %s %s: %s',
+            kind, deviceAddressMotion, descMotion);
 
           await this.polyInterface.addNode(
-            new DoorbellMotion(
+            new Nodedef(
               this.polyInterface,
               this.address, // primary
               deviceAddressMotion,
@@ -140,9 +182,11 @@ module.exports = function(Polyglot, subscribe) {
             )
           );
 
-          logger.info('Doorbell motion node added: %s', descMotion);
+          logger.info('Motion node added nodedef %s: %s',
+            Nodedef.nodeDefId, descMotion);
+
           this.polyInterface.addNoticeTemp(
-            'newDoorbell-' + deviceAddressMotion,
+            'newMotionNode-' + deviceAddressMotion,
             'New node created: ' + descMotion,
             5
           );
@@ -150,14 +194,14 @@ module.exports = function(Polyglot, subscribe) {
           added = true;
 
         } catch (err) {
-          logger.errorStack(err, 'Doorbell add failed:');
+          logger.errorStack(err, 'Motion node add failed:');
         }
       } else {
-        logger.info('Doorbell motion node already exists: %s (%s)',
+        logger.info('Motion node already exists: %s (%s)',
           deviceAddressMotion, descMotion);
       }
 
-      return { added: added }; // Return true if either node was created.
+      return { added: added }; // Return true if either node.
     }
   }
 

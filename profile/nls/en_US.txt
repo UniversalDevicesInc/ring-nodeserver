@@ -16,3 +16,8 @@ ND-DOORBELLM-ICON = MotionSensor
 CMD-DBM-DON-NAME = Motion
 CMD-DBM-DOF-NAME = Motion timeout
 
+ND-CAM-NAME = Camera Motion
+ND-CAM-ICON = MotionSensor
+CMD-CAM-DON-NAME = Motion
+CMD-CAM-DOF-NAME = Motion timeout
+

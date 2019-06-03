@@ -14,13 +14,16 @@ const controllerAddress = 'controller';
 const Controller = require('./Nodes/ControllerNode.js')(Polyglot, subscribe);
 const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
 const DoorbellMotion = require('./Nodes/DoorbellMotion.js')(Polyglot);
+const Camera = require('./Nodes/Camera.js')(Polyglot);
 
 logger.info('-------------------------------------------------------');
 logger.info('Starting Ring Node Server');
 
 // Create an instance of the Polyglot interface. We need to pass all the node
 // classes that we will be using.
-const poly = new Polyglot.Interface([Controller, Doorbell, DoorbellMotion]);
+const poly = new Polyglot.Interface([
+  Controller, Doorbell, DoorbellMotion, Camera,
+]);
 
 // Ring API interface module
 const ringInterface = require('./lib/ringInterface.js')(Polyglot, poly);
@@ -156,23 +159,26 @@ poly.on('mqttEnd', function() {
 async function doPoll(longPoll) {
   try {
     // Prevents polling logic reentry if an existing poll is underway
-    await lock.acquire('poll-' + (longPoll ? 'long' : 'short'), function() {
-      logger.info('%s', longPoll ? 'Long poll' : 'Short poll');
+    await lock.acquire('poll-' + (longPoll ? 'long' : 'short'),
+      async function() {
+        logger.info('%s', longPoll ? 'Long poll' : 'Short poll');
 
-      if (!longPoll) {
-        // Short poll - We retrieve the battery status by querying all nodes
-        const nodes = poly.getNodes();
+        if (!longPoll) {
+          // Short poll - We retrieve the battery status by querying all nodes
+          const nodes = poly.getNodes();
+          const preFetchedData = await ringInterface.getDevices();
 
-        Object.keys(nodes).forEach(function(address) {
-          if ('query' in nodes[address]) {
-            nodes[address].query();
-          }
-        });
-      } else {
-        // We retry a subscription. This also changes the pragma.
-        subscribe();
+          Object.keys(nodes).forEach(function(address) {
+            if ('query' in nodes[address]) {
+              nodes[address].query(preFetchedData);
+            }
+          });
+        } else {
+          // We retry a subscription. This also changes the pragma.
+          subscribe();
+        }
       }
-    });
+    );
   } catch (err) {
     logger.error('Error while polling: %s', err.message);
   }
@@ -193,7 +199,7 @@ async function autoCreateController() {
     // getAccessToken does this for us.
     await ringInterface.getAccessToken();
   } catch (err) {
-    logger.error('Error creating controller node');
+    logger.errorStack(err, 'Error creating controller node:');
 
     // Add a notice in the UI, and leave it there
     poly.addNotice('newController', 'Error creating controller node');
