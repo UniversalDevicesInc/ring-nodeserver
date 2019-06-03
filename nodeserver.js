@@ -83,9 +83,8 @@ poly.on('config', function(config) {
     if (config.netInfo.publicPort) {
       try {
         // If we are configured correctly
-        logger.info('Ring events server public interface is %s:%s',
-          config.netInfo.publicIp,
-          config.netInfo.publicPort);
+        logger.info('Ring events server public interface is %s',
+          config.netInfo.httpsIngress);
 
         subscribe();
       } catch (err) {
