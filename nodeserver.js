@@ -30,7 +30,8 @@ const ringInterface = require('./lib/ringInterface.js')(Polyglot, poly);
 
 // Start web server which will receive Ring events when subscribed
 // Events will be sent to ringInterface.eventProcessor
-require('./lib/ringEvents.js')(Polyglot, poly, ringInterface);
+const ringEvents = require('./lib/ringEvents.js')(
+  Polyglot, poly, ringInterface);
 
 // Connected to MQTT, but config has not yet arrived.
 poly.on('mqttConnected', function() {
@@ -55,6 +56,9 @@ poly.on('config', function(config) {
 
   // If this is the first config after a node server restart
   if (config.isInitialConfig) {
+    // The web server needs to setup the routes and start listening.
+    ringEvents.start(config.worker);
+
     // Removes all existing notices on startup.
     poly.removeNoticesAll();
 
@@ -81,6 +85,7 @@ poly.on('config', function(config) {
     }
 
     if (config.netInfo.publicPort) {
+
       try {
         // If we are configured correctly
         logger.info('Ring events server public interface is %s',
@@ -92,7 +97,7 @@ poly.on('config', function(config) {
       }
     } else {
       logger.error('Public port not set. ' +
-        'ingressRequired must be set on the store record. netInfo is %o',
+        'httpsIngress must be set in server.json. netInfo is %o',
         config.netInfo);
     }
   }
