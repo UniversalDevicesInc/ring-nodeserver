@@ -1,12 +1,12 @@
 'use strict';
 
-// This is the main node for a doorbell with a Battery Life reporting in mV
+// This is the main node for a doorbell with a Battery Life reporting as Percent
 // It holds the battery status and sends DON on Ding events
 
 const doorbellClass = require('./DoorbellClass');
 
-// nodeDefId must match the nodedef in the profile
-const nodeDefId = 'DOORBELL';
+// nodeDefId must match the nodedef in the profile - battery reports in Percent
+const nodeDefId = 'DOORBELLP';
 
 module.exports = function(Polyglot) {
   class Doorbell extends doorbellClass(Polyglot) {
@@ -20,7 +20,7 @@ module.exports = function(Polyglot) {
       super(nodeDefId, polyInterface, primary, address, name, id);
 
       this.drivers = {
-        ST: { value: '', uom: 43 }, // Battery level in mV
+        ST: { value: '', uom: 51 }, // Battery level in uom 51 (percent)
         ERR: { value: '0', uom: 2 }, // In error?
       };
 

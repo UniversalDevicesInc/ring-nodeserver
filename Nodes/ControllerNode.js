@@ -9,15 +9,34 @@
 // nodeDefId must match the nodedef id in your nodedef
 const nodeDefId = 'CONTROLLER';
 
+// Those devices return battery_life in mV as per Pradeep... but not true...
+// const mvDevices = [
+//   'lpd_v1', // Doorbell
+//   'lpd_v2', // Doorbell
+//   'stickup_cam_elite',
+//   'jbox',
+//   'hp_cam_v1',
+//   'hp_cam_v2',
+// ];
+
+// Those devices have lighting capability
+const cameraLighting = [
+  // 'stickup_cam_elite', // Has no lighting capability
+  // 'jbox', // Not sure what that device is.
+  'hp_cam_v1', // Has floodlights - Confirmed by MWareman
+  'hp_cam_v2', // Has floodlights - Confirmed by MWareman
+];
+
 module.exports = function(Polyglot, subscribe) {
-  // Utility function provided to facilitate logging.
   const logger = Polyglot.logger;
 
-  // In this example, we also need to have our custom node because we create
-  // nodes from this controller. See onDiscover
+  // Nodes created during discovery
   const Doorbell = require('./Doorbell.js')(Polyglot);
+  const DoorbellP = require('./DoorbellP.js')(Polyglot);
   const DoorbellMotion = require('./DoorbellMotion.js')(Polyglot);
   const Camera = require('./Camera.js')(Polyglot);
+  const CameraP = require('./CameraP.js')(Polyglot);
+  const CameraLight = require('./CameraLighting.js')(Polyglot);
 
   class Controller extends Polyglot.Node {
     // polyInterface: handle to the interface
@@ -54,13 +73,30 @@ module.exports = function(Polyglot, subscribe) {
       this.polyInterface.updateProfile();
     }
 
+    // NOTE FROM PRADEEP
+    // If the device is wired, which means there is no battery to charge,
+    // then battery_life will be in mVolts.
+    // Examples: lpd_v1,lpd_v2, hp_cam_v1 and v2, jbox, stickup_cam_elit etc.
+    // For dual powered devices, i.e, that requires a charge such as a solar
+    // panel or just a new battery the battery_life will be in percentage.
+    //
+    isPercent(device) {
+      // if (mvDevices.includes(device.kind)) {
+      //   return false; // Devices return battery_life in mV
+      // }
+
+      // Assume it is returning in percentage if between 0 and 100.
+      // Otherwise, mV
+      return device.battery_life <= 100;
+    }
+
     // Discover Doorbells
     async onDiscover() {
       const _this = this;
       try {
         logger.info('Discovering new devices');
 
-        const getDevicesResult = await this.ringInterface.getDevices();
+        const getDevicesResult = await this.ringInterface.getOwnerDevices();
         // logger.info('Devices result: %o', getDevicesResult);
 
         // ----- Doorbells -----
@@ -86,7 +122,7 @@ module.exports = function(Polyglot, subscribe) {
         logger.info('Cameras: %o', cams);
 
         const camsAddResults = await Promise.all(cams.map(function(cam) {
-          return _this.autoAddMotionNode(cam, false);
+          return _this.autoAddCameraNode(cam);
         }));
 
         logger.info('Cameras: %d, added to Polyglot: %d',
@@ -110,14 +146,17 @@ module.exports = function(Polyglot, subscribe) {
       const deviceAddress = id;
       const node = this.polyInterface.getNode(deviceAddress); // id is 5 digits
       const desc = doorbell.description;
+      const kind = doorbell.kind;
+      const isPercent = this.isPercent(doorbell);
+      const batteryLifeType = isPercent ? 'Percent' : 'mV';
 
       if (!node) {
         try {
-          logger.info('Adding doorbell node %s: %s',
-            deviceAddress, desc);
+          logger.info('Adding doorbell node %s kind %s (%s): %s',
+            deviceAddress, kind, batteryLifeType, desc);
 
           await this.polyInterface.addNode(
-            new Doorbell(
+            new (isPercent ? DoorbellP : Doorbell)(
               this.polyInterface,
               this.address, // primary
               deviceAddress,
@@ -125,7 +164,9 @@ module.exports = function(Polyglot, subscribe) {
             )
           );
 
-          logger.info('Doorbell added: %s', desc);
+          logger.info('Doorbell added node %s kind %s (%s): %s',
+            deviceAddress, kind, batteryLifeType, desc);
+
           this.polyInterface.addNoticeTemp(
             'newDoorbell-' + deviceAddress,
             'New node created: ' + desc,
@@ -142,13 +183,13 @@ module.exports = function(Polyglot, subscribe) {
           deviceAddress, desc);
       }
 
-      const motionAdded = await this.autoAddMotionNode(doorbell, true);
+      const motionAdded = await this.autoAddDoorbellMotionNode(doorbell);
 
       // Return true if any node was created.
-      return { added: added || motionAdded };
+      return { added: added || motionAdded.added };
     }
 
-    async autoAddMotionNode(device, isDoorbell = false) {
+    async autoAddDoorbellMotionNode(device) {
       let added = false;
       const id = typeof device.id === 'string' ?
         device.id : device.id.toString();
@@ -157,24 +198,14 @@ module.exports = function(Polyglot, subscribe) {
       const nodeMotion = this.polyInterface.getNode(deviceAddressMotion);
       const descMotion = device.description + ' motion';
       const kind = device.kind;
-      const kindNodedefs = {
-        stickup_cam_elite: Camera, // With battery_life
-        hp_cam_v1: Camera,
-        hp_cam_v2: Camera,
-      };
-
-      // Nodedef for doorbell motion node is DoorbellMotion
-      // Default Nodedef for camera nodes is Camera
-      const Nodedef = isDoorbell ? DoorbellMotion :
-        (kindNodedefs[device.kind] ? kindNodedefs[device.kind] : Camera);
 
       if (!nodeMotion) {
         try {
-          logger.info('Adding motion node kind %s %s: %s',
-            kind, deviceAddressMotion, descMotion);
+          logger.info('Adding doorbell motion node %s kind %s: %s',
+            deviceAddressMotion, kind, descMotion);
 
           await this.polyInterface.addNode(
-            new Nodedef(
+            new DoorbellMotion(
               this.polyInterface,
               this.address, // primary
               deviceAddressMotion,
@@ -182,8 +213,56 @@ module.exports = function(Polyglot, subscribe) {
             )
           );
 
-          logger.info('Motion node added nodedef %s: %s',
-            Nodedef.nodeDefId, descMotion);
+          logger.info('Doorbell motion node added nodedef %s kind %s: %s',
+            deviceAddressMotion, kind, descMotion);
+
+          this.polyInterface.addNoticeTemp(
+            'newMotionNode-' + deviceAddressMotion,
+            'New node created: ' + descMotion,
+            5
+          );
+
+          added = true;
+
+        } catch (err) {
+          logger.errorStack(err, 'Doorbell motion node add failed:');
+        }
+      } else {
+        logger.info('Doorbell motion node already exists: %s (%s)',
+          deviceAddressMotion, descMotion);
+      }
+
+      return { added: added }; // Return true if node added
+    }
+
+    async autoAddCameraNode(device) {
+      let added = false;
+      const id = typeof device.id === 'string' ?
+        device.id : device.id.toString();
+
+      const deviceAddressMotion = id + 'm';
+      const nodeMotion = this.polyInterface.getNode(deviceAddressMotion);
+      const descMotion = device.description + ' motion';
+      const kind = device.kind;
+      const isPercent = this.isPercent(device);
+      const batteryLifeType = isPercent ? 'Percent' : 'mV';
+
+      if (!nodeMotion) {
+        try {
+          logger.info('Adding camera node %s kind %s (%s): %s',
+            deviceAddressMotion, kind, batteryLifeType, descMotion);
+
+          await this.polyInterface.addNode(
+            new (isPercent ? CameraP : Camera)(
+              this.polyInterface,
+              this.address, // primary
+              deviceAddressMotion,
+              descMotion
+            )
+          );
+
+          logger.info('Camera node added %s kind %s (%s): %s',
+            deviceAddressMotion, kind, batteryLifeType, descMotion);
 
           this.polyInterface.addNoticeTemp(
             'newMotionNode-' + deviceAddressMotion,
@@ -201,7 +280,59 @@ module.exports = function(Polyglot, subscribe) {
           deviceAddressMotion, descMotion);
       }
 
-      return { added: added }; // Return true if either node.
+      let floodAdded = false;
+
+      if (cameraLighting.includes(kind)) {
+        floodAdded = await this.autoAddCameraFloodlightNode(device);
+      }
+
+      return { added: added || floodAdded.added };
+    }
+
+    async autoAddCameraFloodlightNode(device) {
+      let added = false;
+      const id = typeof device.id === 'string' ?
+        device.id : device.id.toString();
+
+      const deviceAddressFlood = id + 'l';
+      const nodeFlood = this.polyInterface.getNode(deviceAddressFlood);
+      const descFlood = device.description + ' light';
+      const kind = device.kind;
+
+      if (!nodeFlood) {
+        try {
+          logger.info('Adding camera lighting node %s kind %s: %s',
+            deviceAddressFlood, kind, descFlood);
+
+          await this.polyInterface.addNode(
+            new CameraLight(
+              this.polyInterface,
+              this.address, // primary
+              deviceAddressFlood,
+              descFlood
+            )
+          );
+
+          logger.info('Camera lighting node added %s kind %s: %s',
+            deviceAddressFlood, kind, descFlood);
+
+          this.polyInterface.addNoticeTemp(
+            'newLightNode-' + deviceAddressFlood,
+            'New node created: ' + descFlood,
+            5
+          );
+
+          added = true;
+
+        } catch (err) {
+          logger.errorStack(err, 'Camera lighting node add failed:');
+        }
+      } else {
+        logger.info('Camera lighting node already exists: %s (%s)',
+          deviceAddressFlood, descFlood);
+      }
+
+      return { added: added }; // Return true if node added
     }
   }
 
@@ -245,5 +376,3 @@ module.exports = function(Polyglot, subscribe) {
 
 // When we get a status request for this node.
 // this.status()
-
-

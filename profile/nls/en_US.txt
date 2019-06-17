@@ -1,12 +1,14 @@
 ND-CONTROLLER-NAME = Node server status
 ND-CONTROLLER-ICON = GenericCtl
 ST-CONTROLLER-ST-NAME = Status
-CMD-CONTROLLER-DISCOVER-NAME = Discover new Doorbells
+CMD-CONTROLLER-DISCOVER-NAME = Discover new Devices
 CMD-CONTROLLER-UPDATE_PROFILE-NAME = Update node server profile
 CMD-CONTROLLER-QUERY-NAME = Query node server
 
-ND-DOORBELL-NAME = Doorbell
+ND-DOORBELL-NAME = Doorbell Ding
 ND-DOORBELL-ICON = DoorLock
+ND-DOORBELLP-NAME = Doorbell
+ND-DOORBELLP-ICON = DoorLock
 ST-DB-ST-NAME = Battery life
 ST-DB-ERR-NAME = Error
 CMD-DB-DON-NAME = Ding
@@ -18,6 +20,15 @@ CMD-DBM-DOF-NAME = Motion timeout
 
 ND-CAM-NAME = Camera Motion
 ND-CAM-ICON = MotionSensor
+ND-CAMP-NAME = Camera Motion
+ND-CAMP-ICON = MotionSensor
+ST-CAM-ST-NAME = Battery life
+ST-CAM-ERR-NAME = Error
 CMD-CAM-DON-NAME = Motion
 CMD-CAM-DOF-NAME = Motion timeout
+CMD-CAM-QUERY-NAME = Query
 
+ND-FLOOD-NAME = Camera Floodlight
+ND-FLOOD-ICON = Lamp
+CMD-FLOOD-DON-NAME = Turn on
+CMD-FLOOD-DOF-NAME = Turn off

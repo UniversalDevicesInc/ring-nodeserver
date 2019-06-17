@@ -13,8 +13,11 @@ const controllerAddress = 'controller';
 
 const Controller = require('./Nodes/ControllerNode.js')(Polyglot, subscribe);
 const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
+const DoorbellP = require('./Nodes/DoorbellP.js')(Polyglot);
 const DoorbellMotion = require('./Nodes/DoorbellMotion.js')(Polyglot);
 const Camera = require('./Nodes/Camera.js')(Polyglot);
+const CameraP = require('./Nodes/CameraP.js')(Polyglot);
+const CameraLighting = require('./Nodes/CameraLighting.js')(Polyglot);
 
 logger.info('-------------------------------------------------------');
 logger.info('Starting Ring Node Server');
@@ -22,7 +25,9 @@ logger.info('Starting Ring Node Server');
 // Create an instance of the Polyglot interface. We need to pass all the node
 // classes that we will be using.
 const poly = new Polyglot.Interface([
-  Controller, Doorbell, DoorbellMotion, Camera,
+  Controller, // The controller
+  Doorbell, DoorbellP, DoorbellMotion, // The Doorbell nodes
+  Camera, CameraP, CameraLighting, // The Camera nodes
 ]);
 
 // Ring API interface module
@@ -160,6 +165,8 @@ poly.on('mqttEnd', function() {
 // });
 
 // This is being triggered based on the short and long poll parameters in the UI
+// On short polls, we update statuses
+// On long polls, we resubscribe with a new Pragma
 async function doPoll(longPoll) {
   try {
     // Prevents polling logic reentry if an existing poll is underway
@@ -170,11 +177,11 @@ async function doPoll(longPoll) {
         if (!longPoll) {
           // Short poll - We retrieve the battery status by querying all nodes
           const nodes = poly.getNodes();
-          const preFetchedData = await ringInterface.getDevices();
+          const preFetchedData = await ringInterface.getAllDevices();
 
           Object.keys(nodes).forEach(function(address) {
             if ('query' in nodes[address]) {
-              nodes[address].query(preFetchedData);
+              nodes[address].query(null, preFetchedData);
             }
           });
         } else {

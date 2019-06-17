@@ -7,6 +7,8 @@ This Nodeserver works with Polyglot cloud only.
 2. Have your Ring account user ID and password.
 3. An [ISY Portal](https://my.isy.io) account, and a [license to access your ISY](https://wiki.universal-devices.com/index.php?title=ISY_Portal_Renewal_Instructions).
 
+NOTE: The Ring account must own the devices. Shared cameras will appear, but no events will be triggered. 
+
 ### Nodeserver Installation
 Go to [polyglot.isy.io](https://polyglot.isy.io/store), click on Store, and install the Ring Nodeserver.
 

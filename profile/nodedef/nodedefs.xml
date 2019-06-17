@@ -16,7 +16,7 @@
     </cmds>
   </nodedef>
 
-  <!-- Doorbell Ding-->
+  <!-- Doorbell Main node - Battery life in MV -->
   <nodedef id="DOORBELL" nls="DB">
     <sts>
       <st id="ST" editor="I_MV"/> <!-- Battery level -->
@@ -33,7 +33,24 @@
     </cmds>
   </nodedef>
 
-  <!-- Doorbell Motion Node (Has no battery) -->
+  <!-- Doorbell Main node - Battery life in Percent -->
+  <nodedef id="DOORBELLP" nls="DB">
+    <sts>
+      <st id="ST" editor="I_PERCENT"/> <!-- Battery level -->
+      <st id="ERR" editor="BOOLEAN" hide="T" />
+    </sts>
+    <cmds>
+      <sends>
+        <cmd id="DON"/>
+      </sends>
+      <accepts>
+        <cmd id="DON"/>
+        <cmd id="QUERY"/>
+      </accepts>
+    </cmds>
+  </nodedef>
+
+  <!-- Doorbell Motion Node (Has no battery_life) -->
   <nodedef id="DOORBELLM" nls="DBM">
   <sts/>
   <cmds>
@@ -47,7 +64,7 @@
   </cmds>
   </nodedef>
 
-  <!-- Camera Motion Node (Has battery) -->
+  <!-- Camera Motion Node (Has battery in MV) -->
   <nodedef id="CAM" nls="CAM">
     <sts>
       <st id="ST" editor="I_MV"/> <!-- Battery level -->
@@ -60,6 +77,42 @@
       </sends>
       <accepts>
         <cmd id="DON"/>
+        <cmd id="QUERY"/>
+      </accepts>
+    </cmds>
+  </nodedef>
+
+  <!-- Camera Motion Node (Has battery in Percent) -->
+  <nodedef id="CAMP" nls="CAM">
+    <sts>
+      <st id="ST" editor="I_PERCENT"/> <!-- Battery level -->
+      <st id="ERR" editor="BOOLEAN" hide="T" />
+    </sts>
+    <cmds>
+      <sends>
+        <cmd id="DON"/>
+        <cmd id="DOF"/>
+      </sends>
+      <accepts>
+        <cmd id="DON"/>
+        <cmd id="QUERY"/>
+      </accepts>
+    </cmds>
+  </nodedef>
+
+  <!-- Floodlight - This is an additional node for cameras which has lights -->
+  <nodedef id="FLOOD" nls="FLOOD">
+    <sts>
+      <!-- <st id="ST" editor="_78_0"/> Floodlight state not available in the API -->
+    </sts>
+    <cmds>
+      <sends>
+        <cmd id="DON"/>
+        <cmd id="DOF"/>
+      </sends>
+      <accepts>
+        <cmd id="DON"/>
+        <cmd id="DOF"/>
       </accepts>
     </cmds>
   </nodedef>

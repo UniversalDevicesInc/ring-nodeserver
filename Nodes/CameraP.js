@@ -1,12 +1,12 @@
 'use strict';
 
-// This is the main node for a camera with a Battery Life reporting in mV
+// This is the main node for a camera with a Battery Life reporting in Percent
 // It holds the battery status and sends DON on Motion events
 
 const cameraClass = require('./CameraClass.js');
 
 // nodeDefId must match the nodedef in the profile
-const nodeDefId = 'CAM';
+const nodeDefId = 'CAMP';
 
 module.exports = function(Polyglot) {
   class Camera extends cameraClass(Polyglot) {
@@ -15,7 +15,7 @@ module.exports = function(Polyglot) {
       super(nodeDefId, polyInterface, primary, address, name);
 
       this.drivers = {
-        ST: { value: '', uom: 43 }, // Battery level in mV
+        ST: { value: '', uom: 51 }, // Battery level in Percent
         ERR: { value: '0', uom: 2 }, // In error?
       };
 
