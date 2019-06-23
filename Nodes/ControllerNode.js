@@ -99,41 +99,45 @@ module.exports = function(Polyglot, subscribe) {
         const getDevicesResult = await this.ringInterface.getOwnerDevices();
         // logger.info('Devices result: %o', getDevicesResult);
 
-        // ----- Doorbells -----
-        const doorbells = getDevicesResult.doorbells
-        .concat(getDevicesResult.authorized_doorbells);
+        if (getDevicesResult) {
+          // ----- Doorbells -----
+          const doorbells = getDevicesResult.doorbells
+          .concat(getDevicesResult.authorized_doorbells);
 
-        logger.info('Doorbells: %o', doorbells);
+          logger.info('Doorbells: %o', doorbells);
 
-        const addResults = await Promise.all(doorbells.map(function(doorbell) {
-          return _this.autoAddDoorbell(doorbell, false);
-        }));
+          const addResults = await Promise.all(
+            doorbells.map(function(doorbell) {
+              return _this.autoAddDoorbell(doorbell, false);
+            })
+          );
 
-        logger.info('Doorbells: %d, added to Polyglot: %d',
-          doorbells.length,
-          addResults.filter(function(db) {
-            return db && db.added;
-          }).length,
-        );
+          logger.info('Doorbells: %d, added to Polyglot: %d',
+            doorbells.length,
+            addResults.filter(function(db) {
+              return db && db.added;
+            }).length,
+          );
 
-        // ----- Cameras -----
-        const cams = getDevicesResult.stickup_cams;
+          // ----- Cameras -----
+          const cams = getDevicesResult.stickup_cams;
 
-        logger.info('Cameras: %o', cams);
+          logger.info('Cameras: %o', cams);
 
-        const camsAddResults = await Promise.all(cams.map(function(cam) {
-          return _this.autoAddCameraNode(cam);
-        }));
+          const camsAddResults = await Promise.all(cams.map(function(cam) {
+            return _this.autoAddCameraNode(cam);
+          }));
 
-        logger.info('Cameras: %d, added to Polyglot: %d',
-          cams.length,
-          camsAddResults.filter(function(c) {
-            return c && c.added;
-          }).length,
-        );
+          logger.info('Cameras: %d, added to Polyglot: %d',
+            cams.length,
+            camsAddResults.filter(function(c) {
+              return c && c.added;
+            }).length,
+          );
 
-        // Automatically subscribe to events
-        this.subscribeEvents();
+          // Automatically subscribe to events
+          this.subscribeEvents();
+        }
       } catch (err) {
         logger.errorStack(err, 'Error discovering devices:');
       }
