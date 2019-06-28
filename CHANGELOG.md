@@ -1,5 +1,8 @@
 # Change Log
 
+v1.1.1
+Removed logging of the config
+
 v1.1.0
 Added support for Camera motions (ALPHA release)
 Events are now received using HTTPS

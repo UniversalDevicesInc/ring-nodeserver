@@ -50,7 +50,13 @@ poly.on('config', function(config) {
 
   if (config.isInitialConfig) {
     logger.info('Received config: %o',
-      Object.assign({}, config, {nodes: '<nodes>'}));
+      Object.assign({},
+        config,
+        {
+          nodes: '<nodes>',
+          oauth: '<oAuth config>',
+        }
+      ));
   }
 
   // Important config options:
