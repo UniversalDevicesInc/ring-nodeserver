@@ -95,7 +95,7 @@ poly.on('config', function(config) {
       callAsync(ringInterface.getAccessToken());
     }
 
-    if (config.netInfo.publicPort) {
+    if (config.netInfo.httpsIngress) {
 
       try {
         // If we are configured correctly
@@ -107,8 +107,7 @@ poly.on('config', function(config) {
         logger.errorStack(err, 'Error subscribing:');
       }
     } else {
-      logger.error('Public port not set. ' +
-        'httpsIngress must be set in server.json. netInfo is %o',
+      logger.error('httpsIngress must be set in server.json. netInfo is %o',
         config.netInfo);
     }
   }
