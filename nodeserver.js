@@ -53,8 +53,8 @@ poly.on('config', function(config) {
       Object.assign({},
         config,
         {
-          nodes: '<nodes>',
-          oauth: '<oAuth config>',
+          nodes: '<nodes>', // This is too long and does not need to be logged
+          oauth: '<oAuth config>', // For security
         }
       ));
   }

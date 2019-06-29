@@ -4,7 +4,7 @@
   "type": "node",
   "executable": "nodeserver.js",
   "install_cloud": "install_cloud.sh",
-  "description": "Ring NodeServer (DEVELOPMENT IN PROGRESS)",
+  "description": "Ring NodeServer",
   "notice": "",
   "shortPoll": "300",
   "longPoll": "14400",
