@@ -1,5 +1,8 @@
 # Change Log
 
+v1.1.2
+Added lighting capability for cams which has kind 'floodlight_v2'
+
 v1.1.1
 Removed logging of the config
 

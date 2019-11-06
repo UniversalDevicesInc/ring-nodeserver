@@ -1,7 +1,7 @@
 {
   "name": "ring",
   "description": "Ring NodeServer - Development in progress",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "author": "Benoit Mercier",
   "license": "MIT",
   "main": "nodeserver.js",
