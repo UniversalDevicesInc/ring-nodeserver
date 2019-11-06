@@ -23,6 +23,7 @@ const nodeDefId = 'CONTROLLER';
 const cameraLighting = [
   // 'stickup_cam_elite', // Has no lighting capability
   // 'jbox', // Not sure what that device is.
+  'floodlight_v2', // Has floodlights
   'hp_cam_v1', // Has floodlights - Confirmed by MWareman
   'hp_cam_v2', // Has floodlights - Confirmed by MWareman
 ];
