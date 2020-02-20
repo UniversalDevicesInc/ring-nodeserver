@@ -61,7 +61,7 @@ module.exports = function(Polyglot) {
 
         this.setDriver('ST', deviceData.battery_life, false);
         this.setDriver('ERR', '0', false);
-        this.reportDrivers(); // Reports only changed values
+        this.reportDrivers(true); // Always report, event if it has not changed.
       } else {
         logger.error('getDeviceData - device not found or incorrect: %o',
           deviceData);
