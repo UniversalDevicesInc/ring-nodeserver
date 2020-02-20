@@ -1,5 +1,8 @@
 # Change Log
 
+v1.1.4
+Battery life is always reported to ISY on every short polls
+
 v1.1.3
 Added handling of load balancer health checks (GET /)
 
