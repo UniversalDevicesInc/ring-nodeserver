@@ -58,7 +58,8 @@ module.exports = function(Polyglot) {
         // The new /integrations/v1 api may miss the the battery_life property
         // if it is offline, or wired. So we default a value of 100% charged.
         if (!('battery_life' in deviceData)) {
-          logger.error('getDeviceData had no battery_life: %o', deviceData);
+          logger.error('getDeviceData had no battery_life. Defaults to 100: %o',
+            deviceData);
           deviceData.battery_life = 100;
         }
         // logger.info('This doorbell Data %o', deviceData);
