@@ -74,7 +74,22 @@ module.exports = function(Polyglot) {
       const id = this.address;
       const deviceData = await this.ringInterface.getDeviceData(id, preFetched);
 
-      if (deviceData && 'battery_life' in deviceData) {
+      if (deviceData) {
+        // The new /integrations/v1 api may miss the the battery_life property
+        // if it is offline, or wired. So we default a value of 100% charged.
+        if (!('battery_life' in deviceData)) {
+          logger.error('getDeviceData had no battery_life. Defaults to 100: %o',
+            deviceData);
+          deviceData.battery_life = 100;
+        } else if (deviceData.battery_life > 100) {
+          // The new API has a battery_life in percentage only. Check it.
+          logger.error('getDeviceData had an erroneous battery_life: %s. ' +
+            'Override to 100: %o',
+            deviceData.battery_life,
+            deviceData);
+          deviceData.battery_life = 100;
+        }
+
         logger.info('Device %s battery_life set to %s',
           id, deviceData.battery_life);
 

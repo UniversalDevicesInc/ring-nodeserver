@@ -88,7 +88,11 @@ module.exports = function(Polyglot, subscribe) {
 
       // Assume it is returning in percentage if between 0 and 100.
       // Otherwise, mV
-      return device.battery_life <= 100;
+      // return device.battery_life <= 100;
+
+      // 2020-03-23 Dan from Ring confirmed all battery_life values are now
+      // in Percent
+      return true;
     }
 
     // Discover Doorbells

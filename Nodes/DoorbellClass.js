@@ -61,7 +61,15 @@ module.exports = function(Polyglot) {
           logger.error('getDeviceData had no battery_life. Defaults to 100: %o',
             deviceData);
           deviceData.battery_life = 100;
+        } else if (deviceData.battery_life > 100) {
+          // The new API has a battery_life in percentage only. Check it.
+          logger.error('getDeviceData had an erroneous battery_life: %s. ' +
+            'Override to 100: %o',
+            deviceData.battery_life,
+            deviceData);
+          deviceData.battery_life = 100;
         }
+
         // logger.info('This doorbell Data %o', deviceData);
         logger.info('Doorbell %s battery_life set to %s',
           id, deviceData.battery_life);
