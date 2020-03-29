@@ -74,13 +74,6 @@ module.exports = function(Polyglot, subscribe) {
       this.polyInterface.updateProfile();
     }
 
-    // NOTE FROM PRADEEP
-    // If the device is wired, which means there is no battery to charge,
-    // then battery_life will be in mVolts.
-    // Examples: lpd_v1,lpd_v2, hp_cam_v1 and v2, jbox, stickup_cam_elit etc.
-    // For dual powered devices, i.e, that requires a charge such as a solar
-    // panel or just a new battery the battery_life will be in percentage.
-    //
     isPercent(device) {
       // if (mvDevices.includes(device.kind)) {
       //   return false; // Devices return battery_life in mV

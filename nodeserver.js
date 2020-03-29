@@ -9,7 +9,7 @@ const Polyglot = require('pgc_interface');
 
 const logger = Polyglot.logger;
 const lock = new AsyncLock({ timeout: 500 });
-const controllerAddress = 'controller';
+const controllerAddress = 'controller'; // Should not be changed!
 
 const Controller = require('./Nodes/ControllerNode.js')(Polyglot, subscribe);
 const Doorbell = require('./Nodes/Doorbell.js')(Polyglot);
@@ -73,10 +73,10 @@ poly.on('config', function(config) {
     // Removes all existing notices on startup.
     poly.removeNoticesAll();
 
-    if (!nodesCount) {
-      logger.info('Sending profile files to ISY.');
-      poly.updateProfile();
+    // Updates the profile files if changed
+    poly.updateProfileIfNew();
 
+    if (!nodesCount) {
       // When Nodeserver is started for the first time, creation of the
       // controller fails if done too early.
       const createDelay = 5000;
@@ -92,11 +92,12 @@ poly.on('config', function(config) {
     } else {
       // If we have the controller we need to display the authorization notice
       // if we don't already have tokens. getAccessToken does this for us.
+
       callAsync(ringInterface.getAccessToken());
+      callAsync(convertNodes(config));
     }
 
     if (config.netInfo.httpsIngress) {
-
       try {
         // If we are configured correctly
         logger.info('Ring events server public interface is %s',
@@ -252,6 +253,38 @@ function trapUncaughExceptions() {
     }
   });
 }
+
+// Delay function
+const delay = ms => new Promise(_ => setTimeout(_, ms));
+
+// Converts nodes using mV to Percent, if any
+async function convertNodes(config) {
+  const nodes = poly.getNodes();
+  Object.keys(nodes).forEach(await async function(address) {
+    const n = nodes[address];
+    // Convert Doorbell to DoorbellP (ms -> %)
+    if (n instanceof Doorbell) {
+      logger.info('Converting Doorbell node %s: %s', n.address, n.name);
+      poly.delNode(n);
+      await delay(3000);
+      await poly.addNode(
+        // primary. We don't take it from the n, somehow it's wrong
+        new DoorbellP(poly, controllerAddress, n.address, n.name)
+      );
+    }
+    // Convert Camera to CameraP (ms -> %)
+    if (n instanceof Camera) {
+      logger.info('Converting Camera node %s: %s', n.address, n.name);
+      poly.delNode(n);
+      await delay(3000);
+      await poly.addNode(
+        // primary. We don't take it from the n, somehow it's wrong
+        new CameraP(poly, controllerAddress, n.address, n.name)
+      );
+    }
+  });
+};
+
 
 // Starts the NodeServer!
 poly.start();

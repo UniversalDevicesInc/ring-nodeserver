@@ -1,8 +1,12 @@
 # Change Log
 
+v1.3.0
+Automatically convert Doorbell and Camera nodes from mV to Percent. Programs may need to be re-saved.
+Automatically send new profile files if changed.
+
 v1.2.0
 Change Ring API endpoint to /integrations/v1
-Battery life may be missing from the device if offline if device is wired. In this case, it defaults to 100%
+Battery life may be missing from the device if offline or if device is wired. In this case, it defaults to 100%
 
 v1.1.4
 Battery life is always reported to ISY on every short polls

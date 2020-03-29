@@ -2,6 +2,7 @@
 
 // This is the main node for a camera with a Battery Life reporting in mV
 // It holds the battery status and sends DON on Motion events
+// This is no longer used, except to support migrating to Percent
 
 const cameraClass = require('./CameraClass.js');
 

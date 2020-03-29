@@ -2,6 +2,7 @@
 
 // This is the main node for a doorbell with a Battery Life reporting in mV
 // It holds the battery status and sends DON on Ding events
+// This is no longer used, except to support migrating to Percent
 
 const doorbellClass = require('./DoorbellClass');
 
