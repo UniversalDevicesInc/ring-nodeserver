@@ -1,5 +1,9 @@
 # Change Log
 
+v1.4.0
+changed module request to axios
+Removed logging chatter
+
 v1.3.0
 Automatically convert Doorbell and Camera nodes from mV to Percent. Programs may need to be re-saved.
 Automatically send new profile files if changed.

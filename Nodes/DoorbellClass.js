@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 'use strict';
 
 // This is the base class for the main node of a doorbell.
@@ -58,8 +59,8 @@ module.exports = function(Polyglot) {
         // The new /integrations/v1 api may miss the the battery_life property
         // if it is offline, or wired. So we default a value of 100% charged.
         if (!('battery_life' in deviceData)) {
-          logger.error('getDeviceData had no battery_life. Defaults to 100: %o',
-            deviceData);
+          // logger.error('getDeviceData had no battery_life. Defaults to 100: %o',
+          //   deviceData);
           deviceData.battery_life = 100;
         } else if (deviceData.battery_life > 100) {
           // The new API has a battery_life in percentage only. Check it.

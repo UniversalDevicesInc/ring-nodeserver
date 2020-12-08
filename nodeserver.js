@@ -46,6 +46,7 @@ poly.on('mqttConnected', function() {
 // Config has been received
 poly.on('config', function(config) {
   const nodesCount = Object.keys(config.nodes).length;
+
   logger.info('Config received has %d nodes', nodesCount);
 
   if (config.isInitialConfig) {
