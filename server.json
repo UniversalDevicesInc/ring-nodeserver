@@ -14,8 +14,8 @@
     {
       "title": "Ring NodeServer",
       "author": "Benoit Mercier",
-      "version": "1.4.1",
-      "date": "December 8th, 2020",
+      "version": "1.4.2",
+      "date": "September 19th, 2021",
       "source": "https://github.com/UniversalDevicesInc/ring-nodeserver",
       "license": "MIT"
     }

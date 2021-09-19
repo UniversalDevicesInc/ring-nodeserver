@@ -1,5 +1,11 @@
 # Change Log
 
+v1.4.2
+Added support for new floodlights (kind "cocoa_floodlight")
+
+v1.4.1
+Fixed bug with axios request
+
 v1.4.0
 changed module request to axios
 Removed logging chatter
