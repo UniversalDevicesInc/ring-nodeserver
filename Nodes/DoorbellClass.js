@@ -75,6 +75,22 @@ module.exports = function(Polyglot) {
         logger.info('Doorbell %s battery_life set to %s',
           id, deviceData.battery_life);
 
+        if ('battery_life_2' in deviceData) {
+          if (deviceData.battery_life_2 > 100) {
+            // The new API has a battery_life in percentage only. Check it.
+            logger.error('getDeviceData had an erroneous battery_life_2: %s. ' +
+              'Override to 100: %o',
+              deviceData.battery_life_2,
+              deviceData);
+            deviceData.battery_life_2 = 100;
+          } else {
+            logger.info('Doorbell %s battery_life_2 set to %s',
+              id, deviceData.battery_life_2);
+
+            this.setDriver('BAT2', deviceData.battery_life_2, false);
+          }
+        }
+
         this.setDriver('ST', deviceData.battery_life, false);
         this.setDriver('ERR', '0', false);
         this.reportDrivers(true); // Always report, event if it has not changed.

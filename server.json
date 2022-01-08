@@ -8,14 +8,14 @@
   "notice": "",
   "shortPoll": "300",
   "longPoll": "14400",
-  "profile_version": "1.1.0",
+  "profile_version": "1.2.0",
   "httpsIngress": true,
   "credits": [
     {
       "title": "Ring NodeServer",
       "author": "Benoit Mercier",
-      "version": "1.4.2",
-      "date": "September 19th, 2021",
+      "version": "1.4.3",
+      "date": "January 7th, 2022",
       "source": "https://github.com/UniversalDevicesInc/ring-nodeserver",
       "license": "MIT"
     }

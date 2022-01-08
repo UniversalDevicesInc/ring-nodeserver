@@ -37,6 +37,7 @@
   <nodedef id="DOORBELLP" nls="DB">
     <sts>
       <st id="ST" editor="I_PERCENT"/> <!-- Battery level -->
+      <st id="BAT2" editor="I_PERCENT"/> <!-- Battery level 2 -->
       <st id="ERR" editor="BOOLEAN" hide="T" />
     </sts>
     <cmds>
@@ -86,6 +87,7 @@
   <nodedef id="CAMP" nls="CAM">
     <sts>
       <st id="ST" editor="I_PERCENT"/> <!-- Battery level -->
+      <st id="BAT2" editor="I_PERCENT"/> <!-- Battery level 2 -->
       <st id="ERR" editor="BOOLEAN" hide="T" />
     </sts>
     <cmds>

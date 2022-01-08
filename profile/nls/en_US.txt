@@ -10,6 +10,7 @@ ND-DOORBELL-ICON = DoorLock
 ND-DOORBELLP-NAME = Doorbell
 ND-DOORBELLP-ICON = DoorLock
 ST-DB-ST-NAME = Battery life
+ST-DB-BAT2-NAME = Battery life 2
 ST-DB-ERR-NAME = Error
 CMD-DB-DON-NAME = Ding
 
@@ -23,6 +24,7 @@ ND-CAM-ICON = MotionSensor
 ND-CAMP-NAME = Camera Motion
 ND-CAMP-ICON = MotionSensor
 ST-CAM-ST-NAME = Battery life
+ST-CAM-BAT2-NAME = Battery life 2
 ST-CAM-ERR-NAME = Error
 CMD-CAM-DON-NAME = Motion
 CMD-CAM-DOF-NAME = Motion timeout
